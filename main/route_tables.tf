@@ -29,6 +29,11 @@ resource "aws_route_table" "hub_public_subnet_rt" {
 resource "aws_route_table" "hub_private_subnet_rt_1a" {
   vpc_id = aws_vpc.hub_vpc.id
 
+  route {
+    cidr_block         = var.hr_app_vpc_cidr
+    transit_gateway_id = aws_ec2_transit_gateway.transit_gateway.id
+  }
+
   tags = {
     Name = "Hub VPC private subnet RT 1a "
   }
@@ -58,6 +63,12 @@ resource "aws_route_table" "hub_private_subnet_rt_1b" {
 resource "aws_route" "hub_private_1b_to_app" {
   route_table_id         = aws_route_table.hub_private_subnet_rt_1b.id
   destination_cidr_block = var.app_vpc_cidr
+  transit_gateway_id     = aws_ec2_transit_gateway.transit_gateway.id
+}
+
+resource "aws_route" "hub_private_1b_to_hr_app" {
+  route_table_id         = aws_route_table.hub_private_subnet_rt_1b.id
+  destination_cidr_block = var.hr_app_vpc_cidr
   transit_gateway_id     = aws_ec2_transit_gateway.transit_gateway.id
 }
 
@@ -121,10 +132,36 @@ resource "aws_route_table" "db_private_subnet_rt" {
     vpc_peering_connection_id = aws_vpc_peering_connection.app_to_db_peering.id # target
   }
 
+  route {
+    cidr_block                = var.hr_app_vpc_cidr                                # destination
+    vpc_peering_connection_id = aws_vpc_peering_connection.hr_app_to_db_peering.id # target
+  }
+
+
   tags = {
     Name = "DB VPC private subnet RT"
   }
 }
+
+# HR App VPC private subnet for Nodes
+resource "aws_route_table" "hr_app_private_subnet_rt" {
+  vpc_id = aws_vpc.hr_app_vpc.id
+
+  route {
+    cidr_block         = var.hub_vpc_cidr                           #destination
+    transit_gateway_id = aws_ec2_transit_gateway.transit_gateway.id #target
+  }
+
+  route {
+    cidr_block                = var.db_vpc_cidr                                 # destination
+    vpc_peering_connection_id = aws_vpc_peering_connection.hr_app_to_db_peering.id # target
+  }
+
+  tags = {
+    Name = "HR App VPC private subnet RT"
+  }
+}
+
 
 
 ############# Route tables association ###################
@@ -186,5 +223,23 @@ resource "aws_route_table_association" "db_private_subnet_rt_assoc_1b" {
   route_table_id = aws_route_table.db_private_subnet_rt.id
 }
 
+# HR App VPC private subnets
+resource "aws_route_table_association" "hr_app_private_subnet_node_rt_assoc_1a" {
+  subnet_id      = aws_subnet.hr_app_private_subnet_node_1a.id
+  route_table_id = aws_route_table.hr_app_private_subnet_rt.id
+}
 
+resource "aws_route_table_association" "hr_app_private_subnet_node_rt_assoc_1b" {
+  subnet_id      = aws_subnet.hr_app_private_subnet_node_1b.id
+  route_table_id = aws_route_table.hr_app_private_subnet_rt.id
+}
 
+resource "aws_route_table_association" "hr_app_private_subnet_alb_rt_assoc_1a" {
+  subnet_id      = aws_subnet.hr_app_private_subnet_alb_1a.id
+  route_table_id = aws_route_table.hr_app_private_subnet_rt.id
+}
+
+resource "aws_route_table_association" "hr_app_private_subnet_alb_rt_assoc_1b" {
+  subnet_id      = aws_subnet.hr_app_private_subnet_alb_1b.id
+  route_table_id = aws_route_table.hr_app_private_subnet_rt.id
+}

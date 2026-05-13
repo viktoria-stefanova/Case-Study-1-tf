@@ -22,7 +22,7 @@ resource "aws_db_subnet_group" "rds_subnet_group" {
 # db security group
 resource "aws_security_group" "rds_sg" {
   name        = "rds-security-group"
-  description = "Allow PostgreSQL from App VPC only"
+  description = "Allow PostgreSQL from App and HR App VPC only"
   vpc_id      = aws_vpc.db_vpc.id
 
   tags = {

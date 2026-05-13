@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   terraform-main:
-    name: Main - Fmt / Validate / Plan
+    name: Main - Fmt / Validate
     runs-on: ubuntu-latest
     defaults:
       run:

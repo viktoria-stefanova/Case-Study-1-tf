@@ -51,6 +51,23 @@ variable "db_private_subnets_cidr" {
   description = "CIDR block for DB Private Subnets"
 }
 
+############### HR APP VPC #################################
+
+variable "hr_app_vpc_cidr" {
+  type        = string
+  description = "CIDR block of the HR App VPC"
+}
+
+variable "hr_app_private_subnets_node_cidr" {
+  type        = list(string)
+  description = "CIDR block for HR App Private Node Subnets"
+}
+
+variable "hr_app_private_subnets_alb_cidr" {
+  type        = list(string)
+  description = "CIDR block for HR App Private ALB Subnets"
+}
+
 ################# S3 TERRAFORM STATE #########
 
 variable "terraform_state_bucket_name" {
@@ -88,4 +105,23 @@ variable "waf_rate_limit" {
   type        = number
   description = "Max requests per 5-minute window per IP before WAF blocks and Lambda responds"
   default     = 300
+}
+
+################### VPN ##########################
+
+variable "netlab_public_ip" {
+  type        = string
+  description = "Public IP address of the pfSense WAN side / customer gateway"
+}
+
+variable "netlab_user_cidr" {
+  type        = string
+  description = "NetLab user network CIDR"
+  default     = "172.16.1.0/24"
+}
+
+variable "netlab_server_cidr" {
+  type        = string
+  description = "NetLab server network CIDR"
+  default     = "172.16.2.0/24"
 }

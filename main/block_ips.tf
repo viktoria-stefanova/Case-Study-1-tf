@@ -110,7 +110,7 @@ resource "aws_cloudwatch_metric_alarm" "waf_rate_alarm" {
   namespace           = "AWS/WAFV2"
   metric_name         = "BlockedRequests"
   statistic           = "Sum"
-  period              = 300 # 5-minute window, matches WAF's own evaluation window
+  period              = 30 # 5-minute window, matches WAF's own evaluation window
   evaluation_periods  = 1
   threshold           = 1
   comparison_operator = "GreaterThanOrEqualToThreshold"
