@@ -153,7 +153,7 @@ resource "aws_route_table" "hr_app_private_subnet_rt" {
   }
 
   route {
-    cidr_block                = var.db_vpc_cidr                                 # destination
+    cidr_block                = var.db_vpc_cidr                                    # destination
     vpc_peering_connection_id = aws_vpc_peering_connection.hr_app_to_db_peering.id # target
   }
 
