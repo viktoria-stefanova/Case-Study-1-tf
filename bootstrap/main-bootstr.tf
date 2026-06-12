@@ -67,6 +67,25 @@ resource "aws_ecr_repository" "web_server" {
   }
 }
 
+resource "aws_ecr_repository" "hr_app" {
+  name                 = "hr-ad-sync"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name = "hr-ad-sync"
+  }
+}
+
+output "hr_ecr_repository_url" {
+  value       = aws_ecr_repository.hr_app.repository_url
+  description = "ECR URL for the HR AD sync app"
+}
+
+
 # ------------------------------------------------------
 # Secrets Manager secret containers only
 # Do not put the real secret values here unless you
@@ -310,3 +329,61 @@ resource "aws_iam_role_policy_attachment" "github_tf_ci" {
   role       = aws_iam_role.github_tf_ci.name
   policy_arn = aws_iam_policy.github_tf_ci.arn
 }
+
+
+resource "aws_secretsmanager_secret" "hr_ad_sync_env" {
+  name                    = "hr-ad-sync-env"
+  recovery_window_in_days = 0
+
+  tags = {
+    Name = "hr-ad-sync-env"
+  }
+}
+
+resource "aws_secretsmanager_secret" "hr_k3s_token" {
+  name                    = "hr-k3s-token"
+  recovery_window_in_days = 0
+
+  tags = {
+    Name = "hr-k3s-token"
+  }
+}
+
+resource "aws_secretsmanager_secret" "hr_corp_ca_cert" {
+  name                    = "hr-corp-ca-cert"
+  recovery_window_in_days = 0
+  tags                    = { Name = "hr-corp-ca-cert" }
+}
+
+resource "aws_secretsmanager_secret" "hr_ldap_bind_password" {
+  name                    = "hr-ldap-bind-password"
+  recovery_window_in_days = 0
+  tags                    = { Name = "hr-ldap-bind-password" }
+}
+
+resource "aws_secretsmanager_secret" "phpldapadmin_app_key" {
+  name                    = "phpldapadmin-app-key"
+  recovery_window_in_days = 0
+
+  tags = {
+    Name = "phpldapadmin-app-key"
+  }
+}
+
+resource "aws_s3_bucket" "hr_k8s_manifests" {
+  bucket = "hr-k8s-manifests-${var.aws_account_id}"
+
+  tags = {
+    Name = "HR k8s manifests"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "hr_k8s_manifests" {
+  bucket = aws_s3_bucket.hr_k8s_manifests.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+

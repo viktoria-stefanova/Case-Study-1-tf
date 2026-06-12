@@ -1,7 +1,7 @@
 # Configure the AWS Provider
 provider "aws" {
   profile = "fontys"
-  region  = "eu-central-1"
+  region  = var.aws_region
 }
 
 terraform {
@@ -16,7 +16,7 @@ terraform {
 
   backend "s3" {
     bucket       = "terraform-state-s3-viktoria"
-    key          = "cs1/main.tfstate"
+    key          = "hr-app/main.tfstate"
     region       = "eu-central-1"
     profile      = "fontys"
     use_lockfile = true

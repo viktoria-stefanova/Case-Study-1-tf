@@ -56,16 +56,6 @@ resource "aws_subnet" "hr_app_private_subnet_alb_1b" {
   }
 }
 
-# transit gw attatchment 
-resource "aws_ec2_transit_gateway_vpc_attachment" "hr_app_tgw_attatchment" {
-  subnet_ids         = [aws_subnet.hr_app_private_subnet_alb_1a.id, aws_subnet.hr_app_private_subnet_alb_1b.id]
-  transit_gateway_id = aws_ec2_transit_gateway.transit_gateway.id
-  vpc_id             = aws_vpc.hr_app_vpc.id
-
-  tags = {
-    Name = "tgw-attach-hr-app"
-  }
-}
 
 # Internet Gateway for HR VPC (needed for NAT gateway egress)
 resource "aws_internet_gateway" "igw_hr_app" {

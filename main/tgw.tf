@@ -27,11 +27,12 @@ resource "aws_ec2_transit_gateway_route" "tgw_to_app" {
   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.transit_gateway_rt.id
 }
 
-resource "aws_ec2_transit_gateway_route" "tgw_to_hr_app" {
-  destination_cidr_block         = var.hr_app_vpc_cidr
-  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.hr_app_tgw_attatchment.id
-  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.transit_gateway_rt.id
-}
+# HR
+# resource "aws_ec2_transit_gateway_route" "tgw_to_hr_app" {
+#   destination_cidr_block         = var.hr_app_vpc_cidr
+#   transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.hr_app_tgw_attatchment.id
+#   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.transit_gateway_rt.id
+# }
 
 
 # Associate attachments to the TGW route table
@@ -45,10 +46,11 @@ resource "aws_ec2_transit_gateway_route_table_association" "app_assoc" {
   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.transit_gateway_rt.id
 }
 
-resource "aws_ec2_transit_gateway_route_table_association" "hr_app_assoc" {
-  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.hr_app_tgw_attatchment.id
-  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.transit_gateway_rt.id
-}
+# HR
+# resource "aws_ec2_transit_gateway_route_table_association" "hr_app_assoc" {
+#   transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.hr_app_tgw_attatchment.id
+#   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.transit_gateway_rt.id
+# }
 
 
 

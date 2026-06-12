@@ -1,0 +1,27 @@
+#!/bin/bash
+# k3s AGENT bootstrap — joins the existing cluster
+set -euxo pipefail
+exec > >(tee /var/log/user-data.log) 2>&1
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y curl unzip jq ca-certificates netcat-openbsd
+
+if ! command -v aws >/dev/null 2>&1; then
+  curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+  unzip -q /tmp/awscliv2.zip -d /tmp
+  /tmp/aws/install
+fi
+
+K3S_TOKEN="$(aws secretsmanager get-secret-value \
+  --secret-id '${k3s_token_secret}' --region '${aws_region}' \
+  --query SecretString --output text)"
+
+until nc -z ${server_ip} 6443; do echo "waiting for k3s server..."; sleep 5; done
+
+curl -sfL https://get.k3s.io | \
+  K3S_URL="https://${server_ip}:6443" \
+  K3S_TOKEN="$K3S_TOKEN" \
+  sh -
+
+echo "k3s agent joined."

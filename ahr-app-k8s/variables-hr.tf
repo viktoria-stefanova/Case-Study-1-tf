@@ -5,40 +5,6 @@ variable "aws_region" {
   description = "AWS region"
 }
 
-################ HUB VPC ################
-
-variable "hub_vpc_cidr" {
-  type        = string
-  description = "CIDR block of the Hub VPC"
-}
-
-variable "hub_public_subnets_cidr" {
-  type        = list(string)
-  description = "CIDR block for Hub Public Subnets"
-}
-
-variable "hub_private_subnets_cidr" {
-  type        = list(string)
-  description = "CIDR block for Hub Public Subnets"
-}
-
-################ APP VPC ################
-
-variable "app_vpc_cidr" {
-  type        = string
-  description = "CIDR block of the App VPC"
-}
-
-variable "app_public_subnets_cidr" {
-  type        = list(string)
-  description = "CIDR block for App Public Subnets"
-}
-
-variable "app_private_subnets_cidr" {
-  type        = list(string)
-  description = "CIDR block for App Private Subnets"
-}
-
 ################ DB VPC ################
 
 variable "db_vpc_cidr" {
@@ -104,19 +70,6 @@ variable "account_id" {
   description = "Account ID"
 }
 
-############## SOAR ####################
-
-variable "alert_email" {
-  type        = string
-  description = "Email address to receive SOAR alert notifications"
-}
-
-variable "waf_rate_limit" {
-  type        = number
-  description = "Max requests per 5-minute window per IP before WAF blocks and Lambda responds"
-  default     = 300
-}
-
 ################### VPN ##########################
 
 variable "netlab_public_ip" {
@@ -144,4 +97,23 @@ variable "pfsense_wan_ip" {
 variable "pfsense_cidr_block" {
   type        = string
   description = "pfSense cidr block"
+}
+
+################### K3S ##########################
+
+variable "hr_app_secret_name" {
+  type        = string
+  description = "Secrets Manager secret name for HR app environment variables"
+  default     = "hr-ad-sync-env"
+}
+
+# variable "k8s_manifests_bucket" {
+#   description = "S3 bucket created by bootstrap where Kubernetes manifests are stored"
+#   type        = string
+# }
+
+variable "k8s_manifests_prefix" {
+  description = "Prefix inside the S3 bucket for HR AD Sync Kubernetes manifests"
+  type        = string
+  default     = "hr-ad-sync"
 }
