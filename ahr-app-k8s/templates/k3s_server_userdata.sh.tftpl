@@ -1,12 +1,13 @@
 #!/bin/bash
-# k3s SERVER bootstrap for phpLDAPadmin
-set -euo pipefail
+# k3s SERVER bootstrap for phpLDAPadmin (osixia image)
+set -euxo pipefail
 exec > >(tee /var/log/user-data.log) 2>&1
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y curl unzip jq ca-certificates netcat-openbsd
 
+# AWS CLI v2
 if ! command -v aws >/dev/null 2>&1; then
   curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
   unzip -q /tmp/awscliv2.zip -d /tmp
@@ -15,77 +16,31 @@ fi
 
 fetch_secret() {
   aws secretsmanager get-secret-value \
-    --secret-id "$1" \
-    --region "${aws_region}" \
-    --query SecretString \
-    --output text
+    --secret-id "$1" --region "${aws_region}" \
+    --query SecretString --output text
 }
 
 K3S_TOKEN="$(fetch_secret '${k3s_token_secret}')"
 CORP_CA_PEM="$(fetch_secret '${ca_cert_secret}')"
-LDAP_BIND_PW="$(fetch_secret '${bind_password_secret}')"
-PLA_APP_KEY="$(fetch_secret '${app_key_secret}')"
 
+# Install k3s as server
 curl -sfL https://get.k3s.io | \
   K3S_TOKEN="$K3S_TOKEN" \
   INSTALL_K3S_EXEC="server --write-kubeconfig-mode 644" \
   sh -
 
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-until kubectl get nodes >/dev/null 2>&1; do
-  echo "waiting for k3s API..."
-  sleep 3
-done
+until kubectl get nodes >/dev/null 2>&1; do echo "waiting for k3s API..."; sleep 3; done
 
+# Pull manifests from S3 and apply (creates namespace first via 00-namespace.yaml)
 mkdir -p /opt/hr-manifests
 aws s3 sync "s3://${manifests_bucket}/${manifests_prefix}/" /opt/hr-manifests/ --region "${aws_region}"
 kubectl apply -f /opt/hr-manifests/ --recursive
 
-until kubectl get namespace hr-app >/dev/null 2>&1; do
-  echo "waiting for hr-app namespace..."
-  sleep 2
-done
+# Wait for namespace
+until kubectl get namespace hr-app >/dev/null 2>&1; do echo "waiting for hr-app namespace..."; sleep 2; done
 
-umask 077
-
-cat > /tmp/phpldapadmin.env <<EOF_ENV
-APP_NAME=phpLDAPadmin
-APP_ENV=production
-APP_KEY=$PLA_APP_KEY
-APP_DEBUG=false
-
-LOG_CHANNEL=stderr
-CACHE_DRIVER=file
-QUEUE_CONNECTION=sync
-SESSION_DRIVER=file
-SESSION_LIFETIME=120
-SESSION_DOMAIN=
-SESSION_SECURE_COOKIE=false
-SESSION_SAME_SITE=lax
-TRUSTED_PROXIES=*
-
-LDAP_NAME="Corp Active Directory"
-LDAP_HOST=172.16.2.20
-LDAP_PORT=636
-LDAP_SSL=true
-LDAP_USERNAME=CN=hr-svc,OU=ServiceAccounts,DC=corp,DC=local
-LDAP_PASSWORD=$LDAP_BIND_PW
-LDAP_BASE_DN=DC=corp,DC=local
-LDAP_LOGIN_ATTR=sAMAccountName
-LDAP_LOGIN_ATTR_DESC="User ID"
-LDAP_LOGIN_OBJECTCLASS=user
-LDAP_GUIDKEY=objectGUID
-LDAP_CACHE=false
-LDAP_ALERT_ROOTDN=true
-LDAP_ALLOW_GUEST=false
-EOF_ENV
-
-kubectl -n hr-app create secret generic phpldapadmin-env \
-  --from-file=.env=/tmp/phpldapadmin.env \
-  --dry-run=client -o yaml | kubectl apply -f -
-
-rm -f /tmp/phpldapadmin.env
-
+# CA cert for future LDAPS validation
 printf '%s' "$CORP_CA_PEM" > /tmp/corp-ca.crt
 kubectl -n hr-app create secret generic ldap-ca-cert \
   --from-file=ca.crt=/tmp/corp-ca.crt \
@@ -93,5 +48,4 @@ kubectl -n hr-app create secret generic ldap-ca-cert \
 rm -f /tmp/corp-ca.crt
 
 kubectl -n hr-app rollout status deployment/phpldapadmin --timeout=300s || true
-
 echo "k3s server bootstrap complete."

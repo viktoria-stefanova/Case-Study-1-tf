@@ -181,7 +181,6 @@ resource "aws_instance" "hr_k3s_server" {
     manifests_prefix     = "phpldapadmin"
     k3s_token_secret     = "hr-k3s-token"
     ca_cert_secret       = "hr-corp-ca-cert"
-    bind_password_secret = "hr-ldap-bind-password"
     app_key_secret       = "phpldapadmin-app-key"
   }))
 

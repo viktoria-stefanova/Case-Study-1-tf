@@ -17,26 +17,26 @@ spec:
     spec:
       containers:
         - name: phpldapadmin
-          image: phpldapadmin/phpldapadmin:latest
+          image: osixia/phpldapadmin:0.9.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: 80
+          env:
+            - name: PHPLDAPADMIN_HTTPS
+              value: "false"
+            - name: PHPLDAPADMIN_LDAP_CLIENT_TLS_REQCERT
+              value: "never"
           volumeMounts:
-            - name: app-env
-              mountPath: /app/.env
-              subPath: .env
+            - name: pla-config
+              mountPath: /container/environment/02-custom/env.yaml
+              subPath: env.yaml
               readOnly: true
-            - name: corp-ca
-              mountPath: /etc/ssl/corp
-              readOnly: true
-            - name: laravel-sessions
-              mountPath: /app/storage/framework/sessions
           readinessProbe:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 30
+            initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 6
@@ -44,7 +44,7 @@ spec:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 60
+            initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 6
@@ -56,14 +56,12 @@ spec:
               cpu: 500m
               memory: 512Mi
       volumes:
-        - name: app-env
-          secret:
-            secretName: phpldapadmin-env
+        - name: pla-config
+          configMap:
+            name: phpldapadmin-config
         - name: corp-ca
           secret:
             secretName: ldap-ca-cert
             items:
               - key: ca.crt
                 path: ca.crt
-        - name: laravel-sessions
-          emptyDir: {}

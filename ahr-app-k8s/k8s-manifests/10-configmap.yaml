@@ -1,0 +1,16 @@
+# Add to your k8s-manifests as 10-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: phpldapadmin-config
+  namespace: hr-app
+data:
+  env.yaml: |
+    PHPLDAPADMIN_LDAP_HOSTS:
+      - 172.16.2.20:
+          login:
+            attr: "samaccountname"
+            bind_id: "%s@corp.local"
+          server:
+            base: "DC=corp,DC=local"
+            port: 389
