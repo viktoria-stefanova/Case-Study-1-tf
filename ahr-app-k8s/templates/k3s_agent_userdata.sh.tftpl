@@ -5,7 +5,7 @@ exec > >(tee /var/log/user-data.log) 2>&1
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y curl unzip jq ca-certificates netcat-openbsd
+apt-get install -y curl unzip ca-certificates netcat-openbsd
 
 if ! command -v aws >/dev/null 2>&1; then
   curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip

@@ -87,21 +87,12 @@ resource "aws_vpn_connection_route" "pfsense_wan" {
   destination_cidr_block = var.pfsense_cidr_block
 }
 
-####### Outputs for pfSense config ############
+####### outputs for pfSense config ############
 output "hr_vpn_tunnel1_address" {
   value = aws_vpn_connection.hr_vpn.tunnel1_address
 }
 
 output "hr_vpn_tunnel1_psk" {
   value     = aws_vpn_connection.hr_vpn.tunnel1_preshared_key
-  sensitive = true
-}
-
-output "hr_vpn_tunnel2_address" {
-  value = aws_vpn_connection.hr_vpn.tunnel2_address
-}
-
-output "hr_vpn_tunnel2_psk" {
-  value     = aws_vpn_connection.hr_vpn.tunnel2_preshared_key
   sensitive = true
 }

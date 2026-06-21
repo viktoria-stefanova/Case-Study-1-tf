@@ -127,3 +127,91 @@ resource "aws_nat_gateway" "hr_nat_1b" {
 
   depends_on = [aws_internet_gateway.igw_hr_app]
 }
+
+## VPC endpoints ###
+
+resource "aws_security_group" "hr_ssm_endpoint_sg" {
+  name        = "hr-ssm-endpoint-sg"
+  description = "Allow HTTPS from HR VPC to SSM/Secrets Manager endpoints"
+  vpc_id      = aws_vpc.hr_app_vpc.id
+
+  tags = {
+    Name = "HR SSM Endpoint SG"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "hr_ssm_endpoint_https" {
+  security_group_id = aws_security_group.hr_ssm_endpoint_sg.id
+  cidr_ipv4         = var.hr_app_vpc_cidr
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+}
+
+resource "aws_vpc_security_group_egress_rule" "hr_ssm_endpoint_egress" {
+  security_group_id = aws_security_group.hr_ssm_endpoint_sg.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+}
+
+# ── SSM VPC endpoints
+
+resource "aws_vpc_endpoint" "hr_ssm" {
+  vpc_id              = aws_vpc.hr_app_vpc.id
+  service_name        = "com.amazonaws.${var.aws_region}.ssm"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [aws_subnet.hr_app_private_subnet_node_1a.id, aws_subnet.hr_app_private_subnet_node_1b.id]
+  security_group_ids  = [aws_security_group.hr_ssm_endpoint_sg.id]
+  private_dns_enabled = true
+
+  tags = { Name = "HR SSM Endpoint" }
+}
+
+resource "aws_vpc_endpoint" "hr_ssmmessages" {
+  vpc_id              = aws_vpc.hr_app_vpc.id
+  service_name        = "com.amazonaws.${var.aws_region}.ssmmessages"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [aws_subnet.hr_app_private_subnet_node_1a.id, aws_subnet.hr_app_private_subnet_node_1b.id]
+  security_group_ids  = [aws_security_group.hr_ssm_endpoint_sg.id]
+  private_dns_enabled = true
+
+  tags = { Name = "HR SSM Messages Endpoint" }
+}
+
+resource "aws_vpc_endpoint" "hr_ec2messages" {
+  vpc_id              = aws_vpc.hr_app_vpc.id
+  service_name        = "com.amazonaws.${var.aws_region}.ec2messages"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [aws_subnet.hr_app_private_subnet_node_1a.id, aws_subnet.hr_app_private_subnet_node_1b.id]
+  security_group_ids  = [aws_security_group.hr_ssm_endpoint_sg.id]
+  private_dns_enabled = true
+
+  tags = { Name = "HR EC2 Messages Endpoint" }
+}
+
+# ── S3 gateway endpoint (manifest sync, free) ────────────────────────────────
+
+resource "aws_vpc_endpoint" "hr_s3_gateway" {
+  vpc_id            = aws_vpc.hr_app_vpc.id
+  service_name      = "com.amazonaws.${var.aws_region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids = [
+    aws_route_table.hr_app_private_subnet_rt_1a.id,
+    aws_route_table.hr_app_private_subnet_rt_1b.id,
+  ]
+
+  tags = { Name = "HR S3 Gateway Endpoint" }
+}
+
+# ── Secrets Manager VPC endpoint (nodes read secrets at boot) ────────────────
+
+resource "aws_vpc_endpoint" "hr_secretsmanager" {
+  vpc_id              = aws_vpc.hr_app_vpc.id
+  service_name        = "com.amazonaws.${var.aws_region}.secretsmanager"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [aws_subnet.hr_app_private_subnet_node_1a.id, aws_subnet.hr_app_private_subnet_node_1b.id]
+  security_group_ids  = [aws_security_group.hr_ssm_endpoint_sg.id]
+  private_dns_enabled = true
+
+  tags = { Name = "HR Secrets Manager Endpoint" }
+}

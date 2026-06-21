@@ -1,63 +1,3 @@
-# security group for the internal ALB
-resource "aws_security_group" "hr_alb_sg" {
-  name        = "hr-alb-sg"
-  description = "Allow HTTP from NetLab LAN A + LAN B over VPN"
-  vpc_id      = aws_vpc.hr_app_vpc.id
-
-  tags = {
-    Name = "HR ALB Security Group"
-  }
-}
-
-resource "aws_vpc_security_group_ingress_rule" "hr_alb_from_lan_a" {
-  security_group_id = aws_security_group.hr_alb_sg.id
-  cidr_ipv4         = var.netlab_user_cidr
-  ip_protocol       = "tcp"
-  from_port         = 80
-  to_port           = 80
-  description       = "HTTP from NetLab LAN A"
-}
-
-resource "aws_vpc_security_group_ingress_rule" "hr_alb_from_lan_b" {
-  security_group_id = aws_security_group.hr_alb_sg.id
-  cidr_ipv4         = var.netlab_server_cidr
-  ip_protocol       = "tcp"
-  from_port         = 80
-  to_port           = 80
-  description       = "HTTP from NetLab LAN B"
-}
-
-# ALB egress — NodePort 30080 to k3s nodes
-resource "aws_vpc_security_group_egress_rule" "hr_alb_egress" {
-  security_group_id = aws_security_group.hr_alb_sg.id
-  cidr_ipv4         = var.hr_app_vpc_cidr
-  ip_protocol       = "tcp"
-  from_port         = 30080
-  to_port           = 30080
-  description       = "NodePort 30080 to k3s nodes"
-}
-
-
-# udp 53 from pfsense wan
-resource "aws_vpc_security_group_ingress_rule" "hr_dns_udp_from_pfsense_wan_alb" {
-  security_group_id = aws_security_group.hr_alb_sg.id
-  cidr_ipv4         = "${var.pfsense_wan_ip}/32"
-  ip_protocol       = "udp"
-  from_port         = 53
-  to_port           = 53
-  description       = "DNS UDP from pfSense WAN (Unbound source IP)"
-}
-
-# tcp 53 from pfsense wan
-resource "aws_vpc_security_group_ingress_rule" "hr_dns_tcp_from_pfsense_wan_alb" {
-  security_group_id = aws_security_group.hr_alb_sg.id
-  cidr_ipv4         = "${var.pfsense_wan_ip}/32"
-  ip_protocol       = "tcp"
-  from_port         = 53
-  to_port           = 53
-  description       = "DNS TCP from pfSense WAN (Unbound source IP)"
-}
-
 # Internal ALB
 resource "aws_lb" "hr_alb" {
   name               = "hr-internal-alb"
@@ -131,5 +71,44 @@ resource "aws_lb_listener" "hr_alb_http" {
 
 output "hr_alb_dns_name" {
   value       = aws_lb.hr_alb.dns_name
-  description = "Internal DNS name of the HR ALB — reach it from pfSense over the VPN"
+  description = "Internal DNS name of the HR ALB)"
+}
+
+# security group for the internal ALB
+resource "aws_security_group" "hr_alb_sg" {
+  name        = "hr-alb-sg"
+  description = "Allow HTTP from NetLab LAN A + LAN B over VPN"
+  vpc_id      = aws_vpc.hr_app_vpc.id
+
+  tags = {
+    Name = "HR ALB Security Group"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "hr_alb_from_lan_a" {
+  security_group_id = aws_security_group.hr_alb_sg.id
+  cidr_ipv4         = var.netlab_user_cidr
+  ip_protocol       = "tcp"
+  from_port         = 80
+  to_port           = 80
+  description       = "HTTP from NetLab LAN A"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "hr_alb_from_lan_b" {
+  security_group_id = aws_security_group.hr_alb_sg.id
+  cidr_ipv4         = var.netlab_server_cidr
+  ip_protocol       = "tcp"
+  from_port         = 80
+  to_port           = 80
+  description       = "HTTP from NetLab LAN B"
+}
+
+# ALB egress — NodePort 30080 to k3s nodes
+resource "aws_vpc_security_group_egress_rule" "hr_alb_egress" {
+  security_group_id = aws_security_group.hr_alb_sg.id
+  cidr_ipv4         = var.hr_app_vpc_cidr
+  ip_protocol       = "tcp"
+  from_port         = 30080
+  to_port           = 30080
+  description       = "NodePort 30080 to k3s nodes"
 }

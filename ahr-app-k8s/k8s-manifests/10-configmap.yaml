@@ -1,4 +1,3 @@
-# Add to your k8s-manifests as 10-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,10 +6,10 @@ metadata:
 data:
   env.yaml: |
     PHPLDAPADMIN_LDAP_HOSTS:
-      - 172.16.2.20:
+      - ldaps://DC01.corp.local:
           login:
             attr: "samaccountname"
             bind_id: "%s@corp.local"
           server:
             base: "DC=corp,DC=local"
-            port: 389
+            port: 636

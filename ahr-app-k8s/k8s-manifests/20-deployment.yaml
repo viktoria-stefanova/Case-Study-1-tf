@@ -15,6 +15,20 @@ spec:
       labels:
         app: phpldapadmin
     spec:
+      hostAliases:
+        - ip: "172.16.2.20"
+          hostnames:
+            - "dc01.corp.local"
+      initContainers:
+        - name: copy-ca-cert
+          image: busybox:1.36
+          command: ["sh", "-c", "cp /secret/ca.crt /certs/ca.crt && chmod 644 /certs/ca.crt"]
+          volumeMounts:
+            - name: corp-ca-secret
+              mountPath: /secret
+              readOnly: true
+            - name: corp-ca-writable
+              mountPath: /certs
       containers:
         - name: phpldapadmin
           image: osixia/phpldapadmin:0.9.0
@@ -26,12 +40,17 @@ spec:
             - name: PHPLDAPADMIN_HTTPS
               value: "false"
             - name: PHPLDAPADMIN_LDAP_CLIENT_TLS_REQCERT
-              value: "never"
+              value: "demand"
+            - name: PHPLDAPADMIN_LDAP_CLIENT_TLS_CA_CRT_FILENAME
+              value: "ca.crt"
           volumeMounts:
             - name: pla-config
               mountPath: /container/environment/02-custom/env.yaml
               subPath: env.yaml
               readOnly: true
+            - name: corp-ca-writable
+              mountPath: /container/service/ldap-client/assets/certs/ca.crt
+              subPath: ca.crt
           readinessProbe:
             httpGet:
               path: /
@@ -59,9 +78,8 @@ spec:
         - name: pla-config
           configMap:
             name: phpldapadmin-config
-        - name: corp-ca
+        - name: corp-ca-secret
           secret:
             secretName: ldap-ca-cert
-            items:
-              - key: ca.crt
-                path: ca.crt
+        - name: corp-ca-writable
+          emptyDir: {}

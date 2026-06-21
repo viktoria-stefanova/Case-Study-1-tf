@@ -1,19 +1,19 @@
-#!/bin/bash
-# k3s SERVER bootstrap for phpLDAPadmin (osixia image)
+# k3s SERVER bootstrap for phpLDAPadmin
 set -euxo pipefail
 exec > >(tee /var/log/user-data.log) 2>&1
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y curl unzip jq ca-certificates netcat-openbsd
+apt-get install -y curl unzip ca-certificates
 
-# AWS CLI v2
+# AWS CLI
 if ! command -v aws >/dev/null 2>&1; then
   curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
   unzip -q /tmp/awscliv2.zip -d /tmp
   /tmp/aws/install
 fi
 
+# get secrets from secrets manager
 fetch_secret() {
   aws secretsmanager get-secret-value \
     --secret-id "$1" --region "${aws_region}" \
@@ -23,7 +23,7 @@ fetch_secret() {
 K3S_TOKEN="$(fetch_secret '${k3s_token_secret}')"
 CORP_CA_PEM="$(fetch_secret '${ca_cert_secret}')"
 
-# Install k3s as server
+# install k3s as server
 curl -sfL https://get.k3s.io | \
   K3S_TOKEN="$K3S_TOKEN" \
   INSTALL_K3S_EXEC="server --write-kubeconfig-mode 644" \
@@ -32,15 +32,15 @@ curl -sfL https://get.k3s.io | \
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 until kubectl get nodes >/dev/null 2>&1; do echo "waiting for k3s API..."; sleep 3; done
 
-# Pull manifests from S3 and apply (creates namespace first via 00-namespace.yaml)
+# pull manifests from S3 and apply 
 mkdir -p /opt/hr-manifests
 aws s3 sync "s3://${manifests_bucket}/${manifests_prefix}/" /opt/hr-manifests/ --region "${aws_region}"
 kubectl apply -f /opt/hr-manifests/ --recursive
 
-# Wait for namespace
+# wait for namespace to be created
 until kubectl get namespace hr-app >/dev/null 2>&1; do echo "waiting for hr-app namespace..."; sleep 2; done
 
-# CA cert for future LDAPS validation
+# CA cert for LDAPS validation (mounted by the phpldapadmin deployment)
 printf '%s' "$CORP_CA_PEM" > /tmp/corp-ca.crt
 kubectl -n hr-app create secret generic ldap-ca-cert \
   --from-file=ca.crt=/tmp/corp-ca.crt \

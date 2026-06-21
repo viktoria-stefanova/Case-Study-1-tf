@@ -1,6 +1,4 @@
-# Uploads the phpLDAPadmin manifests to the existing bootstrap bucket
-# (hr-k8s-manifests-<account_id>) under the phpldapadmin/ prefix.
-# The k3s server pulls them at boot.
+# uploads the k8s manifests to a bucket
 
 resource "aws_s3_object" "phpldapadmin_manifests" {
   for_each = fileset("${path.module}/k8s-manifests", "**/*.yaml")
